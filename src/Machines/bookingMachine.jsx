@@ -24,7 +24,7 @@ const bookingMachine = createMachine({
     },
     tickets: {
       on: {
-        BUY: "success",
+        FINISH: "home",
         CANCEL: "home",
       },
     },
