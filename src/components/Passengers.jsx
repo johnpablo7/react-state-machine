@@ -2,7 +2,7 @@ import { useState } from "react";
 import "./Passengers.css";
 
 // state,
-export const Passengers = ({ send }) => {
+export const Passengers = ({ state, send }) => {
   const [value, changeValue] = useState("");
 
   const onChangeInput = (e) => {
@@ -15,14 +15,22 @@ export const Passengers = ({ send }) => {
 
   const submit = (e) => {
     e.preventDefault();
+    send("ADD", { newPassengers: value });
     changeValue("");
   };
+
+  const { passengers } = state.context;
 
   return (
     <form onSubmit={submit} className="Passengers">
       <p className="Passengers-title title">
         Agrega a las personas que van a volar ✈️
       </p>
+      {passengers.map((person, index) => (
+        <p key={`person-${index}`} className="text">
+          {person}
+        </p>
+      ))}
       <input
         id="name"
         name="name"
@@ -31,6 +39,8 @@ export const Passengers = ({ send }) => {
         required
         value={value}
         onChange={onChangeInput}
+        autoFocus
+        pattern="^[a-zA-Z]+(?:\s[a-zA-Z]+)*$"
       />
 
       <div className="Passengers-buttons">

@@ -1,4 +1,35 @@
-import { createMachine } from "xstate";
+import { createMachine, assign } from "xstate";
+import { fetchCountries } from "../utils/api";
+
+const fillCountries = {
+  initial: "loading",
+  states: {
+    loading: {
+      invoke: {
+        id: "getCountries",
+        src: () => fetchCountries,
+        onDone: {
+          target: "success",
+          actions: assign({
+            countries: (context, event) => event.data,
+          }),
+        },
+        onError: {
+          target: "failure",
+          actions: assign({
+            error: "Fallo el request",
+          }),
+        },
+      },
+    },
+    success: {},
+    failure: {
+      on: {
+        RETRY: { target: "loading" },
+      },
+    },
+  },
+};
 
 const bookingMachine = createMachine(
   {
@@ -8,46 +39,76 @@ const bookingMachine = createMachine(
     context: {
       passengers: [],
       selectedCountry: "",
+      countries: [],
+      error: "",
     },
     states: {
       home: {
         on: {
           START: {
             target: "search",
-            actions: "imprimirInicio",
           },
         },
       },
       search: {
-        entry: "imprimirEntrada",
-        exit: "imprimirSalida",
         on: {
-          CONTINUE: "passengers",
+          CONTINUE: {
+            target: "passengers",
+            actions: "choiceSelectedCountry",
+          },
           CANCEL: "home",
         },
+        ...fillCountries,
       },
       passengers: {
         on: {
-          DONE: "tickets",
-          CANCEL: "home",
+          DONE: {
+            target: "tickets",
+            cond: "moreThanOnePassenger",
+          },
+          CANCEL: {
+            target: "home",
+            actions: "cleanContext",
+          },
+          ADD: {
+            target: "passengers",
+            actions: "addPassengers",
+          },
         },
       },
       tickets: {
+        after: {
+          10000: {
+            target: "home",
+            actions: "cleanContext",
+          },
+        },
         on: {
           FINISH: "home",
-          CANCEL: "home",
         },
-      },
-      success: {
-        on: {},
       },
     },
   },
   {
     actions: {
-      imprimirInicio: () => console.log("Imprimir inicio"),
-      imprimirEntrada: () => console.log("Imprimir entrada search"),
-      imprimirSalida: () => console.log("Imprimir salida del search"),
+      addPassengers: assign((context, event) =>
+        context.passengers.push(event.newPassengers)
+      ),
+      choiceSelectedCountry: assign({
+        selectedCountry: (context, event) => event.selectedCountry,
+      }),
+      cleanContext: assign({
+        selectedCountry: "",
+        passengers: [],
+      }),
+      // imprimirInicio: () => console.log("Imprimir inicio"),
+      // imprimirEntrada: () => console.log("Imprimir entrada search"),
+      // imprimirSalida: () => console.log("Imprimir salida del search"),
+    },
+    guards: {
+      moreThanOnePassenger: (context) => {
+        return context.passengers.length > 0;
+      },
     },
   }
 );

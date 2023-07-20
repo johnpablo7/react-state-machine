@@ -12,7 +12,7 @@ export const BaseLayout = () => {
   // console.log("matches false", state.matches("tickets"));
   // console.log("can", state.can("FINISH"));
 
-  console.log("muestra maquina: ", state.value);
+  console.log("muestra maquina: ", state.value, state.context);
 
   return (
     <div className="BaseLayout">
